@@ -1,0 +1,487 @@
+@import '/tmp/opencode/rofi-test/home/.config/matugen/swaync/colors.css';
+
+@define-color text           @on_surface;
+@define-color background     @surface_container;
+@define-color background-alt alpha(@on_surface, .7);
+@define-color selected       @secondary;
+@define-color accent         @primary;
+@define-color hover          @surface_container_high;
+@define-color urgent         @error;
+@define-color surface        alpha(@on_surface, .08);
+@define-color surface-hover  alpha(@on_surface, .12);
+@define-color card           alpha(@on_surface, .06);
+@define-color card-border    alpha(@text, .08);
+
+* {
+  color: @text;
+  all: unset;
+  font-size: 12px;
+  font-family: "JetBrains Mono Nerd Font", "SF Pro Text", "Inter", "Segoe UI", sans-serif;
+  transition: all 250ms cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* ==================== OVERLAY ==================== */
+
+.blank-window {
+  background: transparent;
+}
+
+/* ==================== CONTROL CENTER ==================== */
+
+.control-center {
+  background: @background;
+  border-radius: 24px;
+  border: 1px solid alpha(@text, .08);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, .35),
+    0 0 1px rgba(0, 0, 0, .4),
+    inset 0 1px 0 alpha(white, .06);
+  margin: 12px;
+  padding: 12px;
+}
+
+.control-center-header {
+  padding: 4px 6px 12px 6px;
+}
+
+/* ==================== MODULE CARDS ==================== */
+
+.widget-mpris,
+.widget-buttons-grid,
+.widget-volume,
+.widget-backlight,
+.widget-dnd {
+  background: @card;
+  border-radius: 18px;
+  border: 1px solid @card-border;
+  padding: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+}
+
+.control-center > box > *:last-child {
+  margin-bottom: 0;
+}
+
+/* ==================== WIDGET TITLE ==================== */
+
+.widget-title {
+  background: transparent;
+  border: none;
+  padding: 4px 6px 10px 6px;
+  margin-bottom: 4px;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.widget-title label {
+  font-weight: 600;
+  font-size: 1em;
+  opacity: 0.9;
+}
+
+.widget-title image {
+  opacity: 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.widget-title button {
+  background: alpha(@text, .26);
+  border-radius: 8px;
+  padding: 4px 10px;
+  border: 1px solid @card-border;
+  font-weight: 500;
+  min-height: 26px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+}
+
+.widget-title button:hover {
+  background: alpha(@hover, .15);
+  border-color: alpha(@hover, .2);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .08);
+}
+
+.widget-title button:active {
+  background: alpha(@selected, .2);
+  transform: scale(0.98);
+}
+
+/* ==================== QUICK SETTINGS BUTTONS ==================== */
+
+.widget-buttons-grid {
+  padding: 10px;
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button {
+  margin: 4px;
+  background: alpha(@text, .2);
+  border-radius: 16px;
+  border: 1px solid @card-border;
+  min-height: 44px;
+  min-width: 44px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .04);
+  transition: all 200ms cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button:hover {
+  background: alpha(@accent, .28);
+  border-color: alpha(@accent, .5);
+  color: @accent;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px alpha(@accent, .3);
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button:active {
+  background: alpha(@selected, .25);
+  border-color: alpha(@selected, .3);
+  transform: scale(0.96);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .08);
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button:checked {
+  background: alpha(@selected, .35);
+  border-color: alpha(@selected, .4);
+  color: @selected;
+  box-shadow: 0 2px 10px alpha(@selected, .25);
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button label {
+  font-family: "JetBrains Mono Nerd Font";
+  font-size: 16px;
+  opacity: 0.7;
+  transition: transform 200ms cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.widget-buttons-grid > flowbox > flowboxchild > button:hover label {
+  color: @accent;
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* ==================== VOLUME & BACKLIGHT SLIDERS ==================== */
+
+.widget-volume,
+.widget-backlight {
+  padding: 10px 14px;
+}
+
+.widget-volume trough,
+.widget-backlight trough {
+  background: alpha(@text, .08);
+  border-radius: 12px;
+  min-height: 8px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .1);
+}
+
+.widget-volume highlight,
+.widget-backlight highlight {
+  background: linear-gradient(90deg, @selected 0%, alpha(@selected, .8) 100%);
+  border-radius: 12px;
+  box-shadow: 0 0 8px alpha(@selected, .3);
+}
+
+.widget-volume label,
+.widget-backlight label {
+  font-size: 20px;
+  color: @text;
+  margin-right: 12px;
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+.widget-volume slider,
+.widget-backlight slider {
+  background: white;
+  border-radius: 50%;
+  min-height: 14px;
+  min-width: 14px;
+  margin: -4px 0;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, .2),
+    0 0 0 2px @selected;
+  transition: all 150ms cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.widget-volume slider:hover,
+.widget-backlight slider:hover {
+  min-height: 16px;
+  min-width: 16px;
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, .3),
+    0 0 0 3px @selected;
+}
+
+/* ==================== DO NOT DISTURB ==================== */
+
+.widget-dnd {
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.widget-dnd > switch {
+  background: alpha(@text, .42);
+  border-radius: 24px;
+  border: 1px solid alpha(@text, .1);
+  padding: 3px;
+  min-width: 48px;
+  min-height: 28px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .1);
+}
+
+.widget-dnd > switch:hover {
+  background: alpha(@hover, .2);
+  border-color: alpha(@hover, .2);
+}
+
+.widget-dnd > switch:checked {
+  background: @selected;
+  border-color: @selected;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, .1),
+    0 0 8px alpha(@selected, .4);
+}
+
+.widget-dnd > switch:checked:hover {
+  background: alpha(@selected, .9);
+}
+
+.widget-dnd > switch slider {
+  background: white;
+  border-radius: 50%;
+  min-width: 22px;
+  min-height: 22px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .2);
+  transition: all 200ms cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.widget-dnd > switch:checked slider {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .3);
+}
+
+/* ==================== MEDIA PLAYER ==================== */
+
+.widget-mpris {
+  padding: 8px;
+}
+
+.widget-mpris-player {
+  background: transparent;
+  border: 1px solid alpha(@primary, .25);
+  border-radius: 14px;
+  padding: 10px;
+  margin: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+}
+
+.widget-mpris .widget-mpris-player .mpris-background {
+  filter: blur(16px);
+  opacity: .55;
+}
+
+.widget-mpris .widget-mpris-player .mpris-overlay {
+  background: alpha(@background, .5);
+  padding: 0;
+}
+
+.widget-mpris-album-art {
+  border-radius: 12px;
+  border: 1px solid alpha(@text, .12);
+  margin: 0 10px 10px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .2);
+  min-width: 56px;
+  min-height: 56px;
+}
+
+.widget-mpris-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+  line-height: 1.3;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .4);
+}
+
+.widget-mpris-subtitle {
+  font-weight: 400;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  line-height: 1.3;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .4);
+}
+
+.widget-mpris button {
+  opacity: 0.7;
+  margin: 8px 4px 0 4px;
+  min-width: 32px;
+  min-height: 8px;
+  border-radius: 50%;
+  background: alpha(@text, .08);
+  transition: all 150ms cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.widget-mpris button:hover {
+  background: alpha(@accent, .28);
+  border-color: alpha(@accent, .5);
+  color: @accent;
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px alpha(@accent, .3);
+}
+
+.widget-mpris button:active {
+  transform: scale(0.95);
+}
+
+.widget-mpris button:nth-child(3) {
+  min-width: 36px;
+  min-height: 36px;
+  background: alpha(@selected, .15);
+  border-color: alpha(@selected, .2);
+}
+
+.widget-mpris button:nth-child(3):hover {
+  background: alpha(@selected, .25);
+  border-color: alpha(@selected, .3);
+  box-shadow: 0 4px 12px alpha(@selected, .3);
+  color: @selected;
+}
+
+/* ==================== NOTIFICATIONS ==================== */
+
+.notification-row {
+  outline: none;
+}
+
+.control-center .notification-row {
+  margin: 0;
+  padding: 0 0 8px 0;
+}
+
+.control-center .notification-row .notification-background {
+  background: @card;
+  border-radius: 18px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid @card-border;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+  transition: all 200ms cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.control-center .notification-row .notification-background:hover {
+  background: alpha(@hover, .1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+}
+
+.control-center .notification-row .notification-background .notification.critical {
+  background: linear-gradient(135deg, alpha(@urgent, .1) 0%, transparent 100%);
+  border-left: 3px solid @urgent;
+  border-radius: 18px;
+}
+
+.control-center .notification-row .notification-background .notification .notification-content {
+  margin: 0;
+  padding: 10px 12px;
+}
+
+.control-center .notification-row .notification-background .notification .notification-content .notification-body {
+  padding-top: 6px;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+.control-center .notification-row .notification-background .notification > *:last-child > * {
+  padding: 8px 12px 12px 12px;
+}
+
+.control-center .notification-row .notification-background .notification > *:last-child > * .notification-action {
+  background: alpha(@selected, .32);
+  color: @selected;
+  border-radius: 8px;
+  margin: 3px;
+  padding: 6px 12px;
+  font-weight: 500;
+  border: 1px solid alpha(@selected, .2);
+  min-height: 28px;
+}
+
+.control-center .notification-row .notification-background .notification > *:last-child > * .notification-action:hover {
+  background: alpha(@selected, .2);
+  border-color: alpha(@selected, .3);
+  transform: scale(1.02);
+}
+
+.control-center .notification-row .notification-background .notification > *:last-child > * .notification-action:active {
+  background: alpha(@selected, .3);
+  transform: scale(0.98);
+}
+
+/* Floating notifications */
+.floating-notifications.background .notification-row .notification-background {
+  background: @background;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .6);
+  border-radius: 16px;
+  margin: 12px;
+  padding: 0;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification {
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification.critical {
+  border: 2px solid @urgent;
+}
+
+.floating-notifications.background .notification-row .notification-background .notification .notification-content {
+  margin: 12px;
+}
+
+/* Summary / body */
+.summary {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.body {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.image {
+  margin: 8px 12px 8px 0px;
+}
+
+/* Close button */
+.floating-notifications.background .notification-row .notification-background .close-button,
+.control-center .notification-row .notification-background .close-button {
+  margin: 6px;
+  padding: 2px;
+  border-radius: 6px;
+  background-color: transparent;
+  border: 1px solid transparent;
+}
+
+.floating-notifications.background .notification-row .notification-background .close-button:hover,
+.control-center .notification-row .notification-background .close-button:hover {
+  background-color: @selected;
+}
+
+/* ==================== ANIMATIONS ==================== */
+
+@keyframes slide-in {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification-row {
+  animation: slide-in 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
+}

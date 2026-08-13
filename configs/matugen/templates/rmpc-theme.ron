@@ -1,0 +1,151 @@
+#![enable(implicit_some)]
+#![enable(unwrap_newtypes)]
+#![enable(unwrap_variant_newtypes)]
+(
+    default_album_art_path: None,
+    show_song_table_header: false,
+    draw_borders: true,
+    browser_column_widths: [20, 38, 42],
+    text_color: "{{colors.on_surface.default.hex}}",
+    tab_bar: (
+        enabled: true,
+        active_style: (fg: "{{colors.on_surface.default.hex}}", bg: "{{colors.surface.default.hex}}", modifiers: "Bold"),
+        inactive_style: (fg: "{{colors.on_surface_variant.default.hex}}", modifiers: ""),
+    ),
+    highlighted_item_style: (fg: "{{colors.primary.default.hex}}", modifiers: "Bold"),
+    current_item_style: (fg: "{{colors.surface.default.hex}}", bg: "{{colors.primary.default.hex}}", modifiers: "Bold"),
+    borders_style: (fg: "{{colors.on_surface_variant.default.hex}}", modifiers: ""),
+    highlight_border_style: (fg: "{{colors.primary.default.hex}}"),
+    symbols: (song: "󰝚 ", dir: " ", marker: "* ", ellipsis: "..."),
+    progress_bar: (
+        symbols: ["█", "█", "█"],
+        track_style: (fg: "{{colors.on_surface_variant.default.hex}}"),
+        elapsed_style: (fg: "{{colors.primary.default.hex}}"),
+        thumb_style: (fg: "{{colors.primary.default.hex}}"),
+    ),
+    scrollbar: (
+        symbols: ["", "", "", ""],
+        track_style: (fg: "{{colors.on_surface_variant.default.hex}}"),
+        ends_style: (fg: "{{colors.on_surface_variant.default.hex}}"),
+        thumb_style: (fg: "{{colors.primary.default.hex}}"),
+    ),
+    song_table_format: [
+        (
+            prop: (kind: Property(Title), style: (fg: "{{colors.on_surface.default.hex}}"),
+                highlighted_item_style: (fg: "{{colors.surface.default.hex}}", modifiers: "Bold"),
+                default: (kind: Property(Filename), style: (fg: "{{colors.on_surface_variant.default.hex}}"),)
+            ),
+            width: "70%",
+        ),
+        (
+            prop: (kind: Property(Album), style: (fg: "{{colors.on_surface_variant.default.hex}}"),
+                default: (kind: Text("Unknown Album"), style: (fg: "{{colors.on_surface_variant.default.hex}}"))
+            ),
+            width: "30%",
+        ),
+    ],
+    layout: Split(
+        direction: Vertical,
+        panes: [
+            (
+                size: "3",
+                pane: Pane(Tabs),
+            ),
+            (
+                size: "4",
+                pane: Split(
+                    direction: Horizontal,
+                    panes: [
+                        (
+                            size: "100%",
+                            pane: Split(
+                                direction: Vertical,
+                                panes: [
+                                    (
+                                        size: "4",
+                                        borders: "ALL",
+                                        pane: Pane(Header),
+                                    ),
+                                ]
+                            )
+                        ),
+                    ]
+                ),
+            ),
+            (
+                size: "100%",
+                pane: Split(
+                    direction: Horizontal,
+                    panes: [
+                        (
+                            size: "100%",
+                            borders: "NONE",
+                            pane: Pane(TabContent),
+                        ),
+                    ]
+                ),
+            ),
+            (
+                size: "3",
+                borders: "TOP | BOTTOM",
+                pane: Pane(ProgressBar),
+            ),
+        ],
+    ),
+    header: (
+        rows: [
+            (
+                left: [
+                    (kind: Property(Status(StateV2(playing_label: " ", paused_label: "❚❚", stopped_label: "❚❚"))), style: (fg: "{{colors.primary.default.hex}}", modifiers: "Bold")),
+                ],
+                center: [
+                    (kind: Property(Song(Title)), style: (fg: "{{colors.on_surface.default.hex}}", modifiers: "Bold"),
+                        default: (kind: Property(Song(Filename)), style: (fg: "{{colors.on_surface.default.hex}}", modifiers: "Bold"))
+                    )
+                ],
+                right: [
+                    (kind: Text("Vol: "), style: (fg: "{{colors.primary.default.hex}}", modifiers: "Bold")),
+                    (kind: Property(Status(Volume)), style: (fg: "{{colors.primary.default.hex}}", modifiers: "Bold")),
+                    (kind: Text("% "), style: (fg: "{{colors.primary.default.hex}}", modifiers: "Bold"))
+                ]
+            ),
+            (
+                left: [
+                    (kind: Property(Status(Elapsed)), style: (fg: "{{colors.on_surface.default.hex}}")),
+                    (kind: Text("/"), style: (fg: "{{colors.on_surface_variant.default.hex}}")),
+                    (kind: Property(Status(Duration)), style: (fg: "{{colors.on_surface.default.hex}}")),
+                ],
+                center: [
+                    (kind: Property(Song(Artist)), style: (fg: "{{colors.tertiary.default.hex}}", modifiers: "Bold"),
+                        default: (kind: Text("Unknown Artist"), style: (fg: "{{colors.on_surface_variant.default.hex}}", modifiers: ""))
+                    ),
+                ],
+                right: [
+                    (
+                        kind: Property(Widget(States(
+                            active_style: (fg: "{{colors.primary.default.hex}}", modifiers: "Bold"),
+                            separator_style: (fg: "{{colors.on_surface_variant.default.hex}}")))
+                        ),
+                        style: (fg: "{{colors.on_surface_variant.default.hex}}")
+                    ),
+                ]
+            ),
+        ],
+    ),
+    browser_song_format: [
+        (
+            kind: Group([
+                (kind: Property(Track)),
+                (kind: Text(" ")),
+            ])
+        ),
+        (
+            kind: Group([
+                (kind: Property(Artist)),
+                (kind: Text(" - ")),
+                (kind: Property(Title)),
+            ]),
+            default: (kind: Property(Filename))
+        ),
+    ],
+)

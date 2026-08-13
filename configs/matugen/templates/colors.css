@@ -1,0 +1,21 @@
+/**
+ * ════════════════════════════════════════════════════════
+ *   Sizon by https://github.com/caviarcbr
+ *   Theme: Matugen
+ *   Generated with Matugen
+ * ════════════════════════════════════════════════════════
+ */
+
+    @define-color waybar_accent rgba({{colors.secondary.default.red}}, {{colors.secondary.default.green}}, {{colors.secondary.default.blue}}, 0.18);
+    @define-color waybar_accent_fg @secondary;
+
+<* for name, value in colors *>
+    @define-color {{name}} {{value.default.hex}};
+<* endfor *>
+
+    /* Convenience aliases for waybar */
+    @define-color foreground {{colors.on_surface.default.hex}};
+    @define-color text @foreground;
+
+    /* Override on_background with secondary for softer waybar text */
+    @define-color on_background {{colors.secondary.default.hex}};

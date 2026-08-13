@@ -1,0 +1,13 @@
+{
+    "label": "matugen",
+    "light": {
+        "fg": "{{colors.on_surface.default.hex}}",
+        "bg": "{{colors.surface.default.hex}}",
+        "link": "{{colors.primary.default.hex}}"
+    },
+    "dark": {
+        "fg": "{{colors.on_surface.default.hex}}",
+        "bg": "{{colors.surface.default.hex}}",
+        "link": "{{colors.primary.default.hex}}"
+    }
+}

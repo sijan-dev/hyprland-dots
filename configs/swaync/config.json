@@ -1,0 +1,107 @@
+{
+  "$schema": "/etc/xdg/swaync/configSchema.json",
+  "positionX": "right",
+  "positionY": "top",
+  "cssPriority": "user",
+  "control-center-width": 320,
+  "control-center-height": 490,
+  "control-center-margin-top": 2,
+  "control-center-margin-bottom": 2,
+  "control-center-margin-right": 1,
+  "control-center-margin-left": 0,
+  "notification-window-width": 320,
+  "notification-icon-size": 40,
+  "notification-body-image-height": 0,
+  "notification-body-image-width": 0,
+  "timeout": 4,
+  "timeout-low": 2,
+  "timeout-critical": 6,
+  "fit-to-screen": false,
+  "relative-timestamps": true,
+  "keyboard-shortcuts": true,
+  "notification-grouping": true,
+  "image-visibility": "when-available",
+  "transition-time": 100,
+  "hide-on-clear": false,
+  "hide-on-action": false,
+  "text-empty": "No Notifications",
+  "script-fail-notify": true,
+  "notification-visibility": {
+    "all-muted": {
+      "state": "muted",
+      "desktop-entry": ".*"
+    }
+  },
+  "widgets": [
+    "mpris",
+    "buttons-grid",
+    "volume",
+    "backlight",
+    "dnd",
+    "title",
+    "notifications"
+  ],
+  "widget-config": {
+    "title": {
+      "text": "Notifications",
+      "clear-all-button": true,
+      "button-text": "Clear All "
+    },
+    "dnd": {
+      "text": "Do not disturb",
+      "do-not-disturb-on-startup": false,
+      "do-not-disturb": false
+    },
+    "mpris": {
+      "image-size": 64,
+      "image-radius": 12,
+      "show-album-art": "playing",
+      "blacklist": [
+        "firefox",
+        "chromium",
+        "brave",
+        "mpv",
+        "playerctl",
+        "org.mpris.MediaPlayer2.playerctld"
+      ],
+      "autohide": true,
+      "prefer": [
+        "spotify"
+      ]
+    },
+    "volume": {
+      "label": "\udb81\udd7e ",
+      "show-per-app": false
+    },
+    "backlight": {
+      "label": "\udb80\udce0 ",
+      "device": "intel_backlight",
+      "subsystem": "backlight",
+      "min": 10
+    },
+    "buttons-grid": {
+      "actions": [
+        {
+          "label": "\uf1eb ",
+          "command": "swaync-client -t -sw; ~/.local/bin/wlctl-run"
+        },
+        {
+          "label": "\udb80\udcaf",
+          "command": "swaync-client -t -sw; hyprctl dispatch togglespecialworkspace bluetooth"
+        },
+        {
+          "label": "\udb80\udee9",
+          "command": "swaync-client -t -sw; ~/.local/bin/sizon random"
+        },
+        {
+          "label": "\udb81\udcc7",
+          "command": "swaync-client -t -sw; hyprpicker -a -l"
+        },
+        {
+          "label": "\uf083 ",
+          "command": "swaync-client -t -sw; ~/.local/bin/screenshot"
+        }
+      ]
+    }
+  }
+}

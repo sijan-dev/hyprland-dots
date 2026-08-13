@@ -1,0 +1,77 @@
+[config]
+
+[templates.nvim]
+input_path = '~/.config/matugen/templates/nvim-colors.lua'
+output_path = '~/.config/nvim/lua/plugins/colors.lua'
+
+[templates.hyprland]
+input_path = '~/.config/matugen/templates/hyprland-colors.conf'
+output_path = '~/.config/matugen/generated/hypr/theme/colors.lua'
+
+[templates.kitty]
+input_path = '~/.config/matugen/templates/kitty-colors.conf'
+output_path = '~/.config/matugen/generated/kitty/colors.conf'
+
+[templates.btop]
+input_path = '~/.config/matugen/templates/btop.theme'
+output_path = '~/.config/matugen/generated/btop/themes/current.theme'
+
+[templates.yazi]
+input_path = '~/.config/matugen/templates/yazi-theme.toml'
+output_path = '~/.config/matugen/generated/yazi/theme.toml'
+
+[templates.cava]
+input_path = '~/.config/matugen/templates/cava-colors.ini'
+output_path = '~/.config/matugen/generated/cava/config'
+
+[templates.fuzzel]
+input_path = '~/.config/matugen/templates/fuzzel_theme.ini'
+output_path = '~/.config/matugen/generated/fuzzel/fuzzel_theme.ini'
+
+[templates.waybar]
+input_path = '~/.config/matugen/templates/colors.css'
+output_path = '~/.config/matugen/generated/waybar/colors.css'
+
+[templates.starship]
+input_path = '~/.config/matugen/templates/starship-colors.toml'
+output_path = '~/.config/matugen/generated/starship.toml'
+
+[templates.swaync]
+input_path = '~/.config/matugen/templates/colors.css'
+output_path = '~/.config/matugen/swaync/colors.css'
+
+[templates.gtk3]
+input_path = '~/.config/matugen/templates/gtk-colors.css'
+output_path = '~/.config/matugen/generated/gtk-3.0/colors.css'
+
+[templates.gtk4]
+input_path = '~/.config/matugen/templates/gtk-colors.css'
+output_path = '~/.config/matugen/generated/gtk-4.0/colors.css'
+
+[templates.obsidian]
+input_path = '~/.config/matugen/templates/obsidian-theme.css'
+output_path = '~/.config/matugen/generated/obsidian/theme.css'
+
+[templates.chromium]
+input_path = '~/.config/matugen/templates/chromium'
+output_path = '~/.config/matugen/generated/chromium.theme'
+
+[templates.vscode]
+input_path = '~/.config/matugen/templates/vscode-theme.json'
+output_path = '~/.config/matugen/generated/vscode/themes/sizon-color-theme.json'
+
+[templates.foliate]
+input_path = '~/.config/matugen/templates/foliate-theme.json'
+output_path = '~/.config/com.github.johnfactotum.Foliate/themes/matugen.json'
+post_hook = 'gsettings set com.github.johnfactotum.Foliate.viewer.view theme matugen.json'
+
+[templates.hyprlock]
+input_path = '~/.config/matugen/templates/hyprlock.conf'
+output_path = '~/.config/hypr/hyprlock.conf'
+
+[templates.vicinae]
+input_path = '~/.config/matugen/templates/vicinae.toml'
+output_path = '~/.config/vicinae/themes/matugen.toml'
+
+
+

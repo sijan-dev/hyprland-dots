@@ -1,0 +1,19 @@
+{
+  "runtime.version": "LuaJIT",
+  "runtime.path": [
+    "lua/?.lua",
+    "lua/?/init.lua",
+    "lua/?.lua"
+  ],
+  "diagnostics.globals": [
+    "hl"
+  ],
+  "workspace.checkThirdParty": false,
+  "workspace.library": [
+    "/usr/share/hypr/stubs",
+    "$VIMRUNTIME",
+    "${3rd}/luv/library",
+    "${3rd}/busted/library",
+    "${3rd}/luassert/library"
+  ]
+}   
