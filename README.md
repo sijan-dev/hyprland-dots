@@ -1,6 +1,8 @@
 # Sizon Dotfiles
 
-Hyprland Setup for arch , configs live in `configs/` and are symlinked into `~/.config` by `install.sh`.
+> A curated [Hyprland](https://hyprland.org/) desktop configuration for Arch Linux, built around [matugen](https://github.com/InioX/matugen) dynamic theming and a pluggable wallpaper switcher.
+
+[![Hyprland](https://img.shields.io/badge/desktop-Hyprland-0f766e?style=flat-square)](https://hyprland.org/)
 
 ## Screenshots
 
@@ -10,105 +12,158 @@ Hyprland Setup for arch , configs live in `configs/` and are symlinked into `~/.
 | ![Wallpaper flipper](assets/wallflipper.png) | ![Themed apps](assets/chromium.png) |
 | ![Desktop](assets/screenshot-desktop.png) | |
 
-## Layout
+## Overview
+
+Configurations live in `configs/` and are symlinked into `~/.config` by
+`install.sh`. Theme colors are generated dynamically from the current wallpaper
+via [matugen](https://github.com/InioX/matugen), keeping every application in a
+consistent, unified palette.
 
 ```
-configs/        each app's config, symlinked to ~/.config/<name>
-bin/            ~/.local/bin scripts (theme utilities + helpers) + hooks/
+configs/        per-app config, symlinked to ~/.config/<name>
+bin/            theme scripts + helper utilities + hooks/
 wallfliper/     wallpaper flipper app source (~/.local/share/wallfliper)
 wallpapers/     curated default wallpaper set (6 images)
-assets/         screenshots for the README
-install.sh      installer
+assets/         README screenshots
+install.sh      one-shot installer / uninstaller
 ```
 
-## Install
+## Getting started
+
+### Prerequisites
+
+- Arch Linux (or an Arch-based distro using `pacman` / `paru`).
+
+### Installation
 
 ```sh
-./install.sh                        # backup + symlink configs, copy scripts
-./install.sh --wallpaper-switcher rofi     # use the rofi picker (no wallfliper app)
-./install.sh --wallpaper-switcher wallfliper  # GUI app with video support (default)
-./install.sh --install              # same + installs packages (Arch/paru, needs -y)
-./install.sh --dry-run              # show what would happen
-./install.sh --uninstall            # remove symlinks, restore from ~/.config-backup
+# Backup originals and symlink configs
+./install.sh
+
+# Full install (also installs missing packages via paru)
+./install.sh --install
+
+# Pre-select the wallpaper switcher back-end (skips the interactive prompt)
+./install.sh --wallpaper-switcher rofi
 ```
 
-Without `--wallpaper-switcher`, an interactive prompt asks which one to use.
-The choice is stored in `~/.current_wallpaper_switcher` and the generic
-`bin/wallpaper` front-end (used by all keybinds and autostart) dispatches to
-the right one.
+### Available flags
+
+| Flag | Description |
+| --- | --- |
+| `--install`          | Backup + symlink, then install missing packages (`-y`) |
+| `--wallpaper-switcher <wallfliper\|rofi>` | Choose the back-end without prompting |
+| `--dry-run`          | Print what would happen without changing anything |
+| `--uninstall`        | Remove symlinks and restore from `~/.config-backup` |
+
+> Without `--wallpaper-switcher`, an interactive prompt asks which back-end you
+> want. The choice is stored in `~/.current_wallpaper_switcher`, and the generic
+> `bin/wallpaper` front-end (used by every keybind and autostart entry) dispatches
+> to the correct one.
+
+### Post-install
+
+Run matugen once against a wallpaper to generate the theme:
+
+```sh
+matugen image ~/.config/matugen/generated/wallpaper   # or any wallpaper image
+```
+
+Symlinked configs are **live immediately** — edit inside
+`~/Projects/dotfiles/configs/<name>` and commit the changes.
 
 ## Wallpaper switcher
 
-Two interchangeable back-ends, both wired to the same bindings
-(`ALT+SPACE` picker, `CTRL+ALT+SPACE` random, `SUPER+ALT+LEFT/RIGHT` cycle,
-autostart restore) via `bin/wallpaper`:
+Two interchangeable back-ends, both wired to the same bindings via
+`bin/wallpaper`:
 
-- **wallfliper** (default) — GUI flipper app with video wallpapers (mpvpaper),
-  animated transitions, and thumbnail previews. Installs the Python app to
-  `~/.local/share/wallfliper` (vendored from upstream; see below).
-- **rofi** — lightweight: `bin/wallpaper-rofi` shows a rofi menu of the
-  wallpaper folder, applies the selection via `sizon` (awww + matugen + hooks).
-  No Python app, supports `--restore/--random/--next/--prev`.
+| Binding | Action |
+| --- | --- |
+| `ALT+SPACE`            | Open picker |
+| `CTRL+ALT+SPACE`       | Apply random wallpaper |
+| `SUPER+ALT+LEFT/RIGHT` | Cycle forward / backward |
+| (autostart)            | Restore wallpaper on login |
 
-Switching later is a one-liner: rerun `./install.sh --wallpaper-switcher <name>`.
+### Back-ends
 
-After the first link, run matugen against a wallpaper to populate the
-generated theme:
+- **wallfliper** *(default)* — GUI flipper app with video wallpapers
+  (mpvpaper), animated transitions, and thumbnail previews. Installed as a
+  Python app to `~/.local/share/wallfliper` (vendored from upstream — see the
+  [Wallfliper](#wallfliper) section).
+- **rofi** — lightweight rofi menu over the wallpaper folder; applies via
+  `sizon` (awww + matugen + hooks). No Python dependency. Supports
+  `--restore / --random / --next / --prev`.
+
+Switching back-ends later is a one-liner:
 
 ```sh
-matugen image ~/.config/matugen/generated/wallpaper   # or your wallpaper
+./install.sh --wallpaper-switcher <wallfliper|rofi>
 ```
-
-Everything you change inside `~/Projects/dotfiles/configs/<name>` is live
-immediately (symlinks). Commit changes in the repo.
 
 ## Dependencies
 
-Arch packages: `hyprland hypridle hyprlock hyprsunset waybar swaync swayosd
-kitty matugen fish fastfetch starship tmux yazi btop cava gtk3 gtk4
-adw-gtk3 rofi awww ttf-space-grotesk ...`
+**Core** — `hyprland hypridle hyprlock hyprsunset waybar swaync swayosd kitty
+matugen fish fastfetch starship tmux yazi btop cava gtk3 gtk4 adw-gtk3 rofi
+awww ttf-space-grotesk`
 
-wallfliper mode additionally needs: `pyside6 layer-shell-qt mpvpaper ffmpeg`.
+**wallfliper mode** — `pyside6 layer-shell-qt mpvpaper ffmpeg`
 
-`bin/` helpers may require: `wl-clip-persist cliphist polkit-gnome hyprpicker
-grim slurp hyprlock playerctl pipewire-pulse bluez`.
+**`bin/` helpers may need** — `wl-clip-persist cliphist polkit-gnome hyprpicker
+grim slurp hyprlock playerctl pipewire-pulse bluez`
 
 ## Theming
 
-Colors come from matugen. Templates live in `configs/matugen/templates/`;
-`config.toml` maps them to outputs. The generated files
-(`matugen/generated/`, `hyprlock.conf`, `waybar/colors.css`, gtk colors,
-`yazi/theme.toml`, `btop` theme, `cava` config, `starship.toml`) are
-**not** in git — regenerate them with `matugen image <wallpaper>` or by
-changing the wallpaper (`bin/wallpaper` picker/random, which calls matugen).
+Colors are derived from the active wallpaper with
+[matugen](https://github.com/InioX/matugen).
 
-`bin/theme-switch` toggles between matugen (dynamic) and darky (static);
-`bin/toggle-light-dark` toggles light/dark matugen palettes; `bin/sizon`
-picks a random wallpaper. `bin/hooks/` applies colors to apps after a theme
-change.
+- Templates: `configs/matugen/templates/`
+- Output mapping: `configs/matugen/config.toml`
+- Generated outputs (`matugen/generated/`, `hyprlock.conf`, `waybar/colors.css`,
+  GTK colors, `yazi/theme.toml`, `btop` theme, `cava` config, `starship.toml`)
+  are **not** committed — regenerate with `matugen image <wallpaper>`, or
+  simply switch/randomize the wallpaper.
 
-## Machine-specific tweaks
+Utility scripts:
 
-These are intentionally per-machine and may need editing after a fresh install:
+| Script | Purpose |
+| --- | --- |
+| `bin/theme-switch`            | Toggle matugen (dynamic) / darky (static) engines |
+| `bin/toggle-light-dark`       | Toggle light and dark matugen palettes |
+| `bin/sizon`                   | Apply a random wallpaper (awww + matugen + hooks) |
+| `bin/wallpaper`               | Dispatcher front-end for the active switcher |
+| `bin/wallpaper-rofi`          | Rofi picker / random / next / prev |
+| `bin/hooks/`                  | Apply colors to apps after a theme change |
+
+## Machine-specific configuration
+
+The following are intentionally per-machine and should be reviewed after a
+fresh install:
 
 - `configs/fastfetch/config.jsonc` — logo path (`~/Pictures/Camera/cam.png`).
-- `configs/hypr/monitors.lua` — your display layout.
+- `configs/hypr/monitors.lua` — display layout.
 - `configs/hypr/hypridle.conf` — lock timeouts.
-- Wallpapers — this repo ships a small default set in `wallpapers/`. Point
-  wallfliper at your full collection:
+- **Wallpapers** — the repo ships a small default set in `wallpapers/`. Point
+  wallfliper at your full collection in
   `~/.config/wallfliper/config.json` → `"wallpaper_dir": "~/Pictures/wallpapers"`.
-- `~/.current_wallpaper_switcher` — which switcher is active; written by
-  `install.sh` (falls back to auto-detect: wallfliper app present → wallfliper,
-  else rofi). Theme state (`.current_theme_engine`, `.current_theme_mode`,
-  `.current_wallpaper_index`) is created at runtime by the scripts.
-- Absolute home paths in a few configs (`fish/fish_variables`, `btop.conf`,
+- **Switcher choice** — `~/.current_wallpaper_switcher` is written by
+  `install.sh`; the theme scripts create the remaining runtime state
+  (`.current_theme_engine`, `.current_theme_mode`, `.current_wallpaper_index`)
+  automatically on first use.
+- **Home paths** — a few configs (`fish/fish_variables`, `btop.conf`,
   `gtk-3.0/bookmarks`, `swayosd/config.toml`, `swaync/style.css`) are authored
-  for `/home/sijan`. `install.sh` rewrites them to your `$HOME` automatically
-  when it differs (no-op on the author's machine).
+  for `/home/sijan`; `install.sh` rewrites them to `$HOME` when it differs
+  (a no-op on the author's machine).
 
 ## Wallfliper
 
-Vendored wallpaper flipper app (excluding the optional `everforest` wallpaper
-pack, ~1.1G). Upstream: https://github.com/Roberth-Souza/wallfliper — vendored
-at commit `11d157d`; the live install lives at `~/.local/share/wallfliper`.
-To update, copy newer upstream files over `wallfliper/` and commit.
+A vendored copy of the [wallfliper](https://github.com/Roberth-Souza/wallfliper)
+app (excluding the optional `everforest` wallpaper pack, ~1.1 GB). Upstream is
+vendored at commit `11d157d`; the live install lives at
+`~/.local/share/wallfliper`. To update, copy newer upstream files over
+`wallfliper/` and commit.
+
+## Acknowledgments
+
+- [JaKooLit/Hyprland-Dots](https://github.com/JaKooLit/Hyprland-Dots) — structure and inspiration
+- [matugen](https://github.com/InioX/matugen) — dynamic theming engine
+- [Roberth-Souza/wallfliper](https://github.com/Roberth-Souza/wallfliper) — wallpaper flipper app
