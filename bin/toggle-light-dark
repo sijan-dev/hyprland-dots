@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# toggle-light-dark - toggle matugen between light/dark themes
+# Usage: toggle-light-dark [light|dark|toggle]
+set -euo pipefail
+
+STATE_FILE="$HOME/.current_theme_mode"
+GENERATED_DIR="$HOME/.config/matugen/generated"
+WALLPAPER_LINK="$GENERATED_DIR/wallpaper"
+
+# Static engine keeps a fixed palette - light/dark switching is matugen-only
+ENGINE_FILE="$HOME/.current_theme_engine"
+if [[ -f "$ENGINE_FILE" ]] && [[ "$(cat "$ENGINE_FILE")" == "darky" ]]; then
+    notify-send -t 2000 "Theme" "Darky active - light/dark is disabled" || true
+    echo "Darky active; toggle-light-dark is disabled. Use theme-switch matugen" >&2
+    exit 0
+fi
+
+CURRENT="dark"
+[[ -f "$STATE_FILE" ]] && CURRENT=$(cat "$STATE_FILE")
+
+# Determine target mode
+TARGET="${1:-toggle}"
+case "$TARGET" in
+    toggle)
+        if [[ "$CURRENT" == "dark" ]]; then
+            TARGET="light"
+        else
+            TARGET="dark"
+        fi
+        ;;
+    light|dark)
+        ;;
+    *)
+        echo "Usage: toggle-light-dark [light|dark|toggle]" >&2
+        exit 1
+        ;;
+esac
+
+[[ "$TARGET" == "$CURRENT" ]] && { echo "Already in $TARGET mode"; exit 0; }
+
+# Use current wallpaper
+if [[ ! -L "$WALLPAPER_LINK" ]]; then
+    echo "Error: no current wallpaper (symlink missing: $WALLPAPER_LINK)" >&2
+    exit 1
+fi
+WALL=$(readlink -f "$WALLPAPER_LINK")
+
+echo "Switching to $TARGET mode with $WALL"
+scheme="scheme-tonal-spot"
+[[ -f "$HOME/.current_scheme" ]] && scheme=$(cat "$HOME/.current_scheme")
+matugen image "$WALL" -t "$scheme" -m "$TARGET" --source-color-index=0
+
+# Re-apply all sizon hooks (colors -> apps)
+export CURRENT_LINK="$GENERATED_DIR"
+export THEMES_DIR="$GENERATED_DIR"
+for hook in "$HOME/.local/bin/hooks"/*.sh; do
+    [[ -x "$hook" ]] || chmod +x "$hook"
+    "$hook" 2>/dev/null || true
+done
+
+printf '%s\n' "$TARGET" > "$STATE_FILE"
+notify-send -t 2500 "Theme" "$TARGET mode applied" || true
+echo "Applied: $TARGET"

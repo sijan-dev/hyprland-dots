@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+STATE_DIR=~/.local/state/sizon/
+
+if [[ ! -f "$STATE_DIR/wifi-first-run" ]]; then
+  notify-send -u critical "Wifi setup" "TAB to cycle between catergories\n Arrow keys or Vim-keys (H, J, K, L) to navigate"
+  kitty --title wlctl -e wlctl
+  touch "$STATE_DIR/wifi-first-run"
+else
+  kitty --title wlctl -e wlctl
+fi
+
+

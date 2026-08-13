@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# toggle-idle - toggle hypridle on/off
+set -euo pipefail
+
+if pgrep -x hypridle > /dev/null; then
+	pkill -x hypridle
+	notify-send -t 2000 "Idle" "hypridle disabled" 
+else
+	uwsm-app -- hypridle
+	notify-send -t 2000 "Idle" "hypridle enabled"
+fi
+
+pkill -RTMIN+9 waybar 2>/dev/null || true

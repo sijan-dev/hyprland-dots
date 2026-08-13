@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Toggle global window transparency (Hyprland) between opaque (1.0) and 0.9
+# OFF = 1.0 fully opaque, no transparency
+
+TRANS="0.9"
+STATE_FILE="$HOME/.config/hypr/opacity.state"
+
+CURRENT=$(hyprctl -j getoption decoration:active_opacity | jq -r '.float')
+
+if [ "$CURRENT" = "1.000000" ]; then
+  hyprctl eval "hl.config({ decoration = { active_opacity = $TRANS, inactive_opacity = $TRANS } })"
+  echo "$TRANS" >"$STATE_FILE"
+  # notify-send -t 1500 "Transparency" "Global opacity: $TRANS"
+else
+  hyprctl eval "hl.config({ decoration = { active_opacity = 1.0, inactive_opacity = 1.0 } })"
+  echo "1.0" >"$STATE_FILE"
+  # notify-send -t 1500 "Transparency" "Global opacity: 1.0"
+fi

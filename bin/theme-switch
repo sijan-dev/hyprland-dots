@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# theme-switch - toggle between matugen (dynamic) and darky (static) theming
+# Usage: theme-switch [matugen|darky|toggle]
+set -euo pipefail
+
+HOOK_DIR="$HOME/.local/bin/hooks"
+GENERATED_DIR="$HOME/.config/matugen/generated"
+ENGINE_FILE="$HOME/.current_theme_engine"
+WALLPAPER_LINK="$GENERATED_DIR/wallpaper"
+GEN_SCRIPT="$HOME/.local/bin/theme-gen-dark"
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; RESET='\033[0m'
+ok()   { echo -e "${GREEN}[OK]${RESET} $1"; }
+err()  { echo -e "${RED}[ERROR]${RESET} $1" >&2; }
+info() { echo -e "${CYAN}[INFO]${RESET} $1"; }
+
+current_engine() {
+	if [[ -f "$ENGINE_FILE" ]] && [[ "$(cat "$ENGINE_FILE")" == "darky" ]]; then
+		echo "darky"
+	else
+		echo "matugen"
+	fi
+}
+
+run_hooks() {
+	info "Applying to apps..."
+	for hook in "$HOOK_DIR"/*.sh; do
+		[[ -x "$hook" ]] || chmod +x "$hook"
+		local name
+		name=$(basename "$hook" .sh)
+		if CURRENT_LINK="$GENERATED_DIR" THEMES_DIR="$GENERATED_DIR" bash "$hook" 2>/dev/null; then
+			echo -e "  ${GREEN}✓${RESET} ${name#*-}"
+		else
+			echo -e "  ${CYAN}–${RESET} ${name#*-}"
+		fi
+	done
+}
+
+apply_darky() {
+	info "Generating static darky theme..."
+	if [[ ! -x "$GEN_SCRIPT" ]]; then
+		err "Missing generator: $GEN_SCRIPT"
+		exit 1
+	fi
+	"$GEN_SCRIPT"
+	run_hooks
+	printf '%s\n' "darky" > "$ENGINE_FILE"
+	notify-send -t 2500 "Theme" "Darky (static) applied" 2>/dev/null || true
+	ok "Darky active"
+}
+
+apply_matugen() {
+	if [[ -L "$WALLPAPER_LINK" ]]; then
+		local wall scheme mode
+		wall=$(readlink -f "$WALLPAPER_LINK")
+		scheme="scheme-tonal-spot"
+		[[ -f "$HOME/.current_scheme" ]] && scheme=$(cat "$HOME/.current_scheme")
+		mode="dark"
+		[[ -f "$HOME/.current_theme_mode" ]] && mode=$(cat "$HOME/.current_theme_mode")
+		info "Regenerating matugen from: $(basename "$wall")"
+		matugen image "$wall" -t "$scheme" -m "$mode" --source-color-index=0
+	else
+		err "No current wallpaper (missing $WALLPAPER_LINK)"
+		exit 1
+	fi
+	run_hooks
+	printf '%s\n' "matugen" > "$ENGINE_FILE"
+	notify-send -t 2500 "Theme" "Matugen (dynamic) applied" 2>/dev/null || true
+	ok "Matugen active"
+}
+
+usage() {
+	cat <<'EOF'
+Usage: theme-switch [matugen|darky|toggle]
+
+  matugen    apply dynamic matugen theming
+  darky      apply static darky theme
+  toggle     switch to the other engine (default)
+EOF
+}
+
+case "${1:-toggle}" in
+	matugen)
+		[[ "$(current_engine)" == "matugen" ]] && { echo "Already on matugen"; exit 0; }
+		apply_matugen
+		;;
+	darky|dark|static)
+		[[ "$(current_engine)" == "darky" ]] && { echo "Already on darky"; exit 0; }
+		apply_darky
+		;;
+	toggle)
+		if [[ "$(current_engine)" == "darky" ]]; then
+			apply_matugen
+		else
+			apply_darky
+		fi
+		;;
+	-h|--help|help) usage ;;
+	*) err "Unknown engine: $1"; usage; exit 1 ;;
+esac

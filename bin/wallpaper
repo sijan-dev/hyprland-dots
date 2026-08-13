@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# wallpaper - unified wallpaper front-end.
+#
+# Dispatches to one of two switchers based on the installed setup:
+#   wallfliper  - the GUI wallpaper flipper app (~/.local/share/wallfliper)
+#   rofi        - lightweight rofi-based picker (no python app)
+#
+# Selection order: ~/.current_wallpaper_switcher (written by install.sh),
+# then auto-detect (wallfliper app present → wallfliper, else rofi).
+#
+# Usage (both switchers):
+#   wallpaper                  open the picker (wallfliper GUI or rofi menu)
+#   wallpaper --restore        restore the last wallpaper
+#   wallpaper --random         random wallpaper + matugen
+#   wallpaper --next|--prev    cycle through the wallpaper set
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SWITCHER_FILE="$HOME/.current_wallpaper_switcher"
+
+switcher=""
+if [[ -f "$SWITCHER_FILE" ]] && read -r switcher < "$SWITCHER_FILE" && [[ -n "$switcher" ]]; then
+	: # switcher from state file
+else
+	if [[ -f "$HOME/.local/share/wallfliper/main.py" ]]; then
+		switcher="wallfliper"
+	else
+		switcher="rofi"
+	fi
+fi
+
+case "$switcher" in
+	rofi)
+		exec "$SCRIPT_DIR/wallpaper-rofi" "$@"
+		;;
+	wallfliper|*)
+		exec "$SCRIPT_DIR/wallfliper" "$@"
+		;;
+esac

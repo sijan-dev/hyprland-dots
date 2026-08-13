@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# theme-wallpaper - gated wallpaper->theming hook for wallfliper.
+# Substitutes {path}. Matugen path; in static (darky) mode only the image is
+# swapped - the theme tree is never regenerated.
+set -euo pipefail
+
+ENGINE_FILE="$HOME/.current_theme_engine"
+GENERATED_DIR="$HOME/.config/matugen/generated"
+WALL=$1
+[[ -n "${WALL:-}" ]] || { echo "theme-wallpaper: missing path" >&2; exit 1; }
+
+engine="matugen"
+[[ -f "$ENGINE_FILE" ]] && engine=$(cat "$ENGINE_FILE")
+
+ln -sfn "$WALL" "$GENERATED_DIR/wallpaper"
+
+if [[ "$engine" == "darky" ]]; then
+	# Static mode: image only, no matugen, no hooks.
+	restart-app swayosd-server 2>/dev/null || true
+	exit 0
+fi
+
+scheme="scheme-tonal-spot"
+[[ -f "$HOME/.current_scheme" ]] && scheme=$(cat "$HOME/.current_scheme")
+mode="dark"
+[[ -f "$HOME/.current_theme_mode" ]] && mode=$(cat "$HOME/.current_theme_mode")
+matugen image "$WALL" -t "$scheme" -m "$mode" --source-color-index=0
+~/.local/bin/sizon apply
+restart-app swayosd-server 2>/dev/null || true

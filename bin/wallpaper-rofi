@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+# wallpaper-rofi - rofi-based wallpaper switcher (no wallfliper app needed).
+#
+# Shows a rofi menu of wallpapers; selecting one applies it via `sizon`
+# (awww wallpaper + matugen theme + app hooks). Also supports restore/random/
+# next/prev so it can back the generic `wallpaper` dispatcher.
+#
+# Usage:
+#   wallpaper-rofi                open the rofi picker
+#   wallpaper-rofi --restore      re-apply the wallpaper from state
+#   wallpaper-rofi --random       random wallpaper + matugen
+#   wallpaper-rofi --next|--prev  step through the wallpaper set
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$HOME/.config/wallfliper/config.json"
+STATE_FILE="$HOME/.current_wallpaper_index"
+GENERATED_DIR="$HOME/.config/matugen/generated"
+WALLPAPER_LINK="$GENERATED_DIR/wallpaper"
+
+# ── wallpaper directory ────────────────────────────────────────────────────
+resolve_wallpaper_dir() {
+	if [[ -f "$CONFIG_FILE" ]]; then
+		local dir
+		dir="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("wallpaper_dir",""))' "$CONFIG_FILE" 2>/dev/null || true)"
+		[[ -n "$dir" && -d "${dir/#\~/$HOME}" ]] && { echo "${dir/#\~/$HOME}"; return; }
+	fi
+	for cand in "$HOME/Pictures/wallpapers" "$HOME/.local/share/dotfiles/wallpapers"; do
+		[[ -d "$cand" ]] && { echo "$cand"; return; }
+	done
+	echo ""
+}
+
+# ── wallpaper list ─────────────────────────────────────────────────────────
+list_wallpapers() {
+	local dir="$1"
+	find -L "$dir" -maxdepth 1 -type f \( \
+		-iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \
+		-o -iname '*.webp' -o -iname '*.gif' \) 2>/dev/null | sort
+}
+
+# ── apply ──────────────────────────────────────────────────────────────────
+apply_wallpaper() {
+	local wall="$1" idx="$2"
+	echo "$idx" > "$STATE_FILE"
+	mkdir -p "$GENERATED_DIR"
+	ln -sfn "$wall" "$WALLPAPER_LINK"
+	"$SCRIPT_DIR/sizon" wallpaper "$wall"
+}
+
+# ── current index (trimmed) ────────────────────────────────────────────────
+current_index() {
+	local idx=0
+	read -r idx < "$STATE_FILE" 2>/dev/null || true
+	[[ "$idx" =~ ^[0-9]+$ ]] || idx=0
+	echo "$idx"
+}
+
+# ── commands ───────────────────────────────────────────────────────────────
+cmd_picker() {
+	local dir wallpapers names choice wall idx
+	dir="$(resolve_wallpaper_dir)"
+	[[ -n "$dir" ]] || { echo "wallpaper-rofi: no wallpaper directory found" >&2; exit 1; }
+	mapfile -t wallpapers < <(list_wallpapers "$dir")
+	[[ ${#wallpapers[@]} -gt 0 ]] || { echo "wallpaper-rofi: no wallpapers in $dir" >&2; exit 1; }
+
+	mapfile -t names < <(printf '%s\n' "${wallpapers[@]##*/}")
+	choice="$(printf '%s\n' "${names[@]}" | rofi -dmenu -p "Wallpaper" -i -theme-str 'window { width: 40%; } listview { lines: 12; }')"
+	[[ -n "$choice" ]] || exit 0
+
+	for i in "${!names[@]}"; do
+		if [[ "${names[$i]}" == "$choice" ]]; then
+			idx="$i"
+			wall="${wallpapers[$i]}"
+			break
+		fi
+	done
+	apply_wallpaper "$wall" "$idx"
+}
+
+cmd_random() {
+	local dir wallpapers idx
+	dir="$(resolve_wallpaper_dir)"
+	mapfile -t wallpapers < <(list_wallpapers "$dir")
+	[[ ${#wallpapers[@]} -gt 0 ]] || { echo "wallpaper-rofi: no wallpapers" >&2; exit 1; }
+	idx=$((RANDOM % ${#wallpapers[@]}))
+	apply_wallpaper "${wallpapers[$idx]}" "$idx"
+}
+
+cmd_restore() {
+	local dir wallpapers idx wall
+	dir="$(resolve_wallpaper_dir)"
+	mapfile -t wallpapers < <(list_wallpapers "$dir")
+	[[ ${#wallpapers[@]} -gt 0 ]] || { echo "wallpaper-rofi: no wallpapers" >&2; exit 1; }
+	idx="$(current_index)"
+	if [[ "$idx" -ge "${#wallpapers[@]}" ]]; then
+		idx=$((RANDOM % ${#wallpapers[@]}))
+	fi
+	apply_wallpaper "${wallpapers[$idx]}" "$idx"
+}
+
+cmd_step() {
+	local dir wallpapers idx wall step="$1"
+	dir="$(resolve_wallpaper_dir)"
+	mapfile -t wallpapers < <(list_wallpapers "$dir")
+	[[ ${#wallpapers[@]} -gt 0 ]] || { echo "wallpaper-rofi: no wallpapers" >&2; exit 1; }
+	idx="$(current_index)"
+	idx=$(( (idx + step) % ${#wallpapers[@]} ))
+	[[ "$idx" -lt 0 ]] && idx=$((idx + ${#wallpapers[@]}))
+	apply_wallpaper "${wallpapers[$idx]}" "$idx"
+}
+
+case "${1:-picker}" in
+	picker|-p)            cmd_picker ;;
+	--restore|restore)    cmd_restore ;;
+	--random|random)      cmd_random ;;
+	--next|next)          cmd_step 1 ;;
+	--prev|prev)          cmd_step -1 ;;
+	*) echo "wallpaper-rofi: unknown arg: $1 (picker|--restore|--random|--next|--prev)" >&2; exit 1 ;;
+esac

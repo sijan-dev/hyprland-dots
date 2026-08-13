@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+URL=""
+for arg in "$@"; do
+	case "$arg" in
+		--new-window) ;;
+		*) URL="$arg" ;;
+	esac
+done
+
+if [[ -z "$URL" ]]; then
+	echo "usage: launch-webapp [--new-window] <url>" >&2
+	exit 1
+fi
+
+exec /usr/bin/chromium --app="$URL"

@@ -1,0 +1,196 @@
+#!/bin/bash
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║                 ███████╗ ██╗ ███████╗  ██████╗ ███╗   ██╗                  ║
+# ║                 ██╔════╝ ██║ ╚═══██╔╝ ██╔═══██╗ ████╗  ██║                 ║
+# ║                 ███████╗ ██║    ██╔╝  ██║   ██║ ██╔██╗ ██║                 ║
+# ║                 ╚════██║ ██║   ██╔╝   ██║   ██║ ██║╚██╗██║                 ║
+# ║                 ███████║ ██║  ██╔╝    ╚██████╔╝ ██║ ╚████║                 ║
+# ║                 ╚══════╝ ╚═╝ ╚██████╗  ╚═════╝ ╚═╝  ╚═══╝                  ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+# Matugen-only theming
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+GENERATED_DIR="$HOME/.config/matugen/generated"
+WALLPAPER_DIR="$HOME/Pictures/wallpapers"
+STATE_FILE="$HOME/.current_wallpaper_index"
+HOOKS_DIR="$SCRIPT_DIR/hooks"
+WALLPAPER_LINK="$GENERATED_DIR/wallpaper"
+THEME_MODE_FILE="$HOME/.current_theme_mode"
+
+VERSION="4.0.0"
+
+# colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+RESET='\033[0m'
+
+ok()   { echo -e "${GREEN}[OK]${RESET} $1"; }
+err()  { echo -e "${RED}[ERROR]${RESET} $1" >&2; }
+info() { echo -e "${BLUE}[INFO]${RESET} $1"; }
+
+notify() {
+	command -v notify-send &>/dev/null && notify-send "$1" "$2" ${3:+-i "$3"}
+}
+
+run_hooks() {
+	echo "Running hooks..."
+	for hook in "$HOOKS_DIR"/*.sh; do
+		[[ -x "$hook" ]] || chmod +x "$hook"
+		local name
+		name=$(basename "$hook" .sh)
+		if CURRENT_LINK="$GENERATED_DIR" THEMES_DIR="$GENERATED_DIR" bash "$hook" 2>/dev/null; then
+			echo -e "  ${GREEN}✓${RESET} ${name#*-}"
+		else
+			echo -e "  ${CYAN}–${RESET} ${name#*-}"
+		fi
+	done
+}
+
+set_wallpaper() {
+	local wall="$1"
+	awww query &>/dev/null || {
+		awww-daemon --format xrgb &
+		sleep 0.3
+	}
+	awww img "$wall" --transition-type center --transition-pos top-right --transition-fps 120 --transition-duration 1 --transition-bezier 0.25,0.1,0.25,1.0
+
+	local mode="dark"
+	[[ -f "$THEME_MODE_FILE" ]] && mode=$(cat "$THEME_MODE_FILE")
+	[[ "$mode" == "light" || "$mode" == "dark" ]] || mode="dark"
+
+	mkdir -p "$GENERATED_DIR"
+	ln -sfn "$wall" "$WALLPAPER_LINK"
+
+	# Static (darky) engine: wallpaper image only, never regenerate colors.
+	local engine="matugen"
+	[[ -f "$HOME/.current_theme_engine" ]] && engine=$(cat "$HOME/.current_theme_engine")
+	if [[ "$engine" == "darky" ]]; then
+		notify-send -t 1500 "Theme" "Darky active - static colors kept" 2>/dev/null || true
+		restart-app swayosd-server
+		return 0
+	fi
+
+	local scheme="scheme-tonal-spot"
+	[[ -f "$HOME/.current_scheme" ]] && scheme=$(cat "$HOME/.current_scheme")
+	matugen image "$wall" -t "$scheme" -m "$mode" --source-color-index=0
+
+	restart-app swayosd-server
+}
+
+# ╭───────────────────────────────────────────────────────────────────────╮
+# │ Commands                                                              │
+# ╰───────────────────────────────────────────────────────────────────────╯
+
+cmd_apply() {
+	info "Applying matugen colors..."
+	mkdir -p "$GENERATED_DIR"
+
+	hyprctl eval 'hl.config({misc = { disable_autoreload = 1, }, })' &>/dev/null || true
+	run_hooks
+	hyprctl eval 'hl.config({misc = { disable_autoreload = 0, }, })' &>/dev/null || true
+
+	ok "Applied"
+}
+
+cmd_random() {
+	local wall
+	mapfile -t WALLPAPERS < <(find -L "$WALLPAPER_DIR" -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.gif' \) 2>/dev/null | sort)
+	[[ ${#WALLPAPERS[@]} -eq 0 ]] && { err "No wallpapers in $WALLPAPER_DIR"; exit 1; }
+
+	local index=$((RANDOM % ${#WALLPAPERS[@]}))
+	wall="${WALLPAPERS[$index]}"
+	echo "$index" > "$STATE_FILE"
+
+	info "Random wallpaper: $(basename "$wall")"
+	set_wallpaper "$wall"
+	cmd_apply
+	ok "Done"
+}
+
+cmd_wallpaper() {
+	local wall="$1"
+	if [[ -z "$wall" ]]; then
+		exec "$SCRIPT_DIR/wallpaper"
+	fi
+	[[ -f "$wall" ]] || { err "Not a file: $wall"; exit 1; }
+
+	info "Applying wallpaper: $wall"
+	set_wallpaper "$wall"
+	cmd_apply
+	ok "Done"
+}
+
+cmd_current() {
+	echo "dynamic (matugen)"
+	"$HOME/.local/bin/fetch-colors" 2>/dev/null || true
+}
+
+# ╭───────────────────────────────────────────────────────────────────────╮
+# │ Help                                                                  │
+# ╰───────────────────────────────────────────────────────────────────────╯
+
+cmd_help() {
+	cat <<'EOF'
+        ♪                                            ♫
+   ▄▄▄▄▄                                         ♪
+  ██▀▀▀▀█▄                      █▄           ♬
+  ▀██▄  ▄▀       ▄              ██          ▄
+    ▀██▄▄  ██ ██ ███▄███▄ ████▄ ████▄ ▄███▄ ████▄ ██ ██
+  ▄   ▀██▄ ██▄██ ██ ██ ██ ██ ██ ██ ██ ██ ██ ██ ██ ██▄██
+  ▀██████▀▄▄▀██▀▄██ ██ ▀█▄████▀▄██ ██▄▀███▀▄██ ▀█▄▄▀██▀
+     ♫       ██           ██                        ██
+           ▀▀▀     ♪      ▀              ♬        ▀▀▀
+
+Usage: sizon <command>
+
+Commands:
+  apply              Re-apply matugen colors to all apps
+  reload             Alias for apply
+  random             Random wallpaper + matugen
+  wallpaper [file]   Apply a specific wallpaper + matugen
+  current            Show current theme
+  help               This help
+  version            Version info
+
+Keybindings:
+  SUPER+SHIFT+SPACE               Wallpaper picker + matugen
+  SUPER+ALT+SPACE                 wallpaper (wallfliper GUI or rofi picker)
+  CTRL+ALT+SPACE                  Random wallpaper + matugen
+  SUPER+ALT+LEFT/RIGHT            Cycle wallpapers + matugen
+
+EOF
+}
+
+cmd_version() {
+	cat <<'EOF'
+        ♪                                            ♫
+   ▄▄▄▄▄                                         ♪
+  ██▀▀▀▀█▄                      █▄           ♬
+  ▀██▄  ▄▀       ▄              ██          ▄
+    ▀██▄▄  ██ ██ ███▄███▄ ████▄ ████▄ ▄███▄ ████▄ ██ ██
+  ▄   ▀██▄ ██▄██ ██ ██ ██ ██ ██ ██ ██ ██ ██ ██ ██ ██▄██
+  ▀██████▀▄▄▀██▀▄██ ██ ▀█▄████▀▄██ ██▄▀███▀▄██ ▀█▄▄▀██▀
+     ♫       ██           ██                        ██
+           ▀▀▀     ♪      ▀              ♬        ▀▀▀
+EOF
+	echo ""
+	echo "  Sizon v$VERSION (matugen-only)"
+}
+
+# ╭───────────────────────────────────────────────────────────────────────╮
+# │ Main                                                                  │
+# ╰───────────────────────────────────────────────────────────────────────╯
+
+case "${1:-help}" in
+	apply|reload)        cmd_apply ;;
+	random|wallpaper-random)  cmd_random ;;
+	wallpaper|set|wall)  shift; cmd_wallpaper "$@" ;;
+	current)             cmd_current ;;
+	help|-h|--help)      cmd_help ;;
+	version|-v)          cmd_version ;;
+	*)                   err "Unknown: $1"; echo "Try: sizon help"; exit 1 ;;
+esac

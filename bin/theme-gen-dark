@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""theme-gen-dark - render the static "darky" theme through the matugen templates.
+
+Fills ~/.config/matugen/generated/ (and the directly-consumed outputs) from a
+fixed monochrome palette, so switching engines just repopulates the same tree
+that matugen normally owns. The template files are exactly the ones matugen
+uses, so both engines stay in lockstep.
+"""
+
+from __future__ import annotations
+
+import os
+import re
+import sys
+from pathlib import Path
+
+HOME = Path.home()
+CONFIG = Path(os.environ.get("XDG_CONFIG_HOME") or HOME / ".config")
+GENERATED = CONFIG / "matugen" / "generated"
+TEMPLATES = CONFIG / "matugen" / "templates"
+DARKY = CONFIG / "themes" / "darky"
+
+# Static material palette derived from darky (colors.toml)
+PALETTE: dict[str, str] = {
+    "background": "131313",
+    "on_background": "fff8f8",
+    "surface": "131313",
+    "on_surface": "fff8f8",
+    "surface_variant": "1c1c1c",
+    "on_surface_variant": "9c9090",
+    "surface_tint": "fff8f8",
+    "surface_dim": "131313",
+    "surface_bright": "9c9090",
+    "surface_container": "1c1c1c",
+    "surface_container_lowest": "131313",
+    "surface_container_low": "1c1c1c",
+    "surface_container_high": "262626",
+    "surface_container_highest": "2d2d2d",
+    "outline": "9c9090",
+    "outline_variant": "3a3a3a",
+    "shadow": "000000",
+    "scrim": "000000",
+    "primary": "fff8f8",
+    "on_primary": "131313",
+    "primary_container": "fcecec",
+    "on_primary_container": "131313",
+    "primary_fixed": "fff8f8",
+    "on_primary_fixed": "131313",
+    "primary_fixed_dim": "e8e3e3",
+    "on_primary_fixed_variant": "131313",
+    "secondary": "fff8f8",
+    "on_secondary": "131313",
+    "secondary_container": "fcecec",
+    "on_secondary_container": "131313",
+    "secondary_fixed": "fcecec",
+    "on_secondary_fixed": "131313",
+    "secondary_fixed_dim": "fff8f8",
+    "on_secondary_fixed_variant": "131313",
+    "tertiary": "b9ffa5",
+    "on_tertiary": "131313",
+    "tertiary_container": "b9ffa5",
+    "on_tertiary_container": "131313",
+    "tertiary_fixed": "fcecec",
+    "on_tertiary_fixed": "131313",
+    "tertiary_fixed_dim": "fff8f8",
+    "on_tertiary_fixed_variant": "131313",
+    "error": "ff9f9f",
+    "on_error": "131313",
+    "error_container": "ff9f9f",
+    "on_error_container": "131313",
+    "inverse_surface": "deddda",
+    "inverse_on_surface": "1c1c1c",
+    "inverse_primary": "fff8f8",
+}
+
+TOKEN_RE = re.compile(
+    r"\{\{\s*colors\.([a-zA-Z0-9_]+)\.default\.(hex|hex_stripped|red|green|blue)"
+    r"(?:\s*\|[^}]*)?\s*\}\}"
+)
+
+
+def _rgb_int(hex6: str) -> tuple[int, int, int]:
+    return int(hex6[0:2], 16), int(hex6[2:4], 16), int(hex6[4:6], 16)
+
+
+def _token_value(name: str, field: str) -> str:
+    hex6 = PALETTE[name]
+    if field == "hex":
+        return "#" + hex6
+    if field == "hex_stripped":
+        return hex6
+    r, g, b = _rgb_int(hex6)
+    return {"red": str(r), "green": str(g), "blue": str(b)}[field]
+
+
+def resolve_loops(text: str) -> str:
+    """Expand <* for name, value in colors *> ... <* endfor *> blocks.
+
+    Matugen emits every palette member here; the static tree renders the same
+    block with the fixed palette so the output shape never diverges.
+    """
+
+    pattern = re.compile(
+        r"<\*\s*for\s+(?P<loopvar>[a-zA-Z_]+),\s*value\s+in\s+colors\s*\*>(?P<body>.*?)<\*\s*endfor\s*\*>",
+        re.DOTALL,
+    )
+    for match in pattern.finditer(text):
+        inner = match.group("body")
+        name_var = match.group("loopvar")
+        expanded_lines = []
+        for key in PALETTE:
+            line = inner.replace("{{" + name_var + "}}", key)
+            line = line.replace("{{value.default.hex}}", "#" + PALETTE[key])
+            line = line.replace("{{value.default.hex_stripped}}", PALETTE[key])
+            expanded_lines.append(line.rstrip())
+        text = text.replace(match.group(0), "\n".join(expanded_lines))
+    return text
+
+
+def resolve_tokens(text: str, image: str) -> str:
+    text = re.sub(r"\{\{\s*image\s*\}\}", image, text)
+    text = re.sub(r"\{\{\s*mode\s*\}\}", "dark", text)
+    text = TOKEN_RE.sub(lambda m: _token_value(m.group(1), m.group(2)), text)
+    return text
+
+
+def render(template: Path, image: str) -> str:
+    text = template.read_text()
+    text = resolve_loops(text)
+    text = resolve_tokens(text, image)
+    return text
+
+
+def current_image() -> str:
+    link = GENERATED / "wallpaper"
+    if link.is_symlink():
+        return str(link.resolve())
+    return ""
+
+
+class Target:
+    def __init__(self, template: str, output: str):
+        self.template = template
+        self.output = output
+
+
+def expand_output(output: str) -> Path:
+    if output.startswith("~/"):
+        return HOME / output[2:]
+    if output.startswith("generated/"):
+        return GENERATED / output[len("generated/") :]
+    return Path(output).expanduser()
+
+
+def main() -> int:
+    image = current_image()
+    targets: list[Target] = [
+        Target("nvim-colors.lua", "~/.config/nvim/lua/plugins/colors.lua"),
+        Target("hyprland-colors.conf", "generated/hypr/theme/colors.lua"),
+        Target("kitty-colors.conf", "generated/kitty/colors.conf"),
+        Target("btop.theme", "generated/btop/themes/current.theme"),
+        Target("yazi-theme.toml", "generated/yazi/theme.toml"),
+        Target("cava-colors.ini", "generated/cava/config"),
+        Target("fuzzel_theme.ini", "generated/fuzzel/fuzzel_theme.ini"),
+        Target("colors.css", "generated/waybar/colors.css"),
+        Target("starship-colors.toml", "generated/starship.toml"),
+        Target("colors.css", "~/.config/matugen/swaync/colors.css"),
+        Target("gtk-colors.css", "generated/gtk-3.0/colors.css"),
+        Target("gtk-colors.css", "generated/gtk-4.0/colors.css"),
+        Target("obsidian-theme.css", "generated/obsidian/theme.css"),
+        Target("chromium", "generated/chromium.theme"),
+        Target("vscode-theme.json", "generated/vscode/themes/sizon-color-theme.json"),
+        Target("hyprlock.conf", "~/.config/hypr/hyprlock.conf"),
+        Target("vicinae.toml", "~/.config/vicinae/themes/matugen.toml"),
+    ]
+
+    errors = 0
+    for t in targets:
+        tpl = TEMPLATES / t.template
+        if not tpl.is_file():
+            print(f"  ! missing template {t.template}", file=sys.stderr)
+            errors += 1
+            continue
+        out = expand_output(t.output)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(render(tpl, image))
+        print(f"  ✓ {t.template} -> {out}")
+
+    return 1 if errors else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

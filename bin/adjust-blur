@@ -1,0 +1,32 @@
+#!/bin/bash
+
+STEP_SIZE=1
+STEP_PASSES=1
+MAX_SIZE=10
+MAX_PASSES=8
+MIN_SIZE=1
+MIN_PASSES=1
+
+ACTION=$1
+
+CURRENT_SIZE=$(hyprctl getoption decoration:blur:size | awk 'NR==1{print $2}')
+CURRENT_PASSES=$(hyprctl getoption decoration:blur:passes | awk 'NR==1{print $2}')
+
+if [ "$ACTION" = "up" ]; then
+  NEW_SIZE=$((CURRENT_SIZE + STEP_SIZE))
+  NEW_PASSES=$((CURRENT_PASSES + STEP_PASSES))
+  [ "$NEW_SIZE" -gt "$MAX_SIZE" ] && NEW_SIZE=$MAX_SIZE
+  [ "$NEW_PASSES" -gt "$MAX_PASSES" ] && NEW_PASSES=$MAX_PASSES
+elif [ "$ACTION" = "down" ]; then
+  NEW_SIZE=$((CURRENT_SIZE - STEP_SIZE))
+  NEW_PASSES=$((CURRENT_PASSES - STEP_PASSES))
+  [ "$NEW_SIZE" -lt "$MIN_SIZE" ] && NEW_SIZE=$MIN_SIZE
+  [ "$NEW_PASSES" -lt "$MIN_PASSES" ] && NEW_PASSES=$MIN_PASSES
+elif [ "$ACTION" = "reset" ]; then
+  NEW_SIZE=1
+  NEW_PASSES=4
+else
+  exit 1
+fi
+
+hyprctl eval "hl.config({ decoration = { blur = { size = $NEW_SIZE, passes = $NEW_PASSES } } })"

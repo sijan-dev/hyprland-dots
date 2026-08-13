@@ -1,0 +1,40 @@
+#!/bin/bash
+CURRENT_LINK="$HOME/.config/matugen/generated"
+
+inject_colors() {
+  theme_src="$CURRENT_LINK/vscode/themes/sizon-color-theme.json"
+  [[ -f "$theme_src" ]] || return
+
+  ext_dir="$HOME/.vscode-oss/extensions/sizon.sizon-theme-1.0.0"
+  mkdir -p "$ext_dir/themes"
+  pkg="$HOME/.local/share/sizon/vscode-theme/package.json"
+  [[ -f "$ext_dir/package.json" ]] || cp "$pkg" "$ext_dir/package.json"
+  cp "$theme_src" "$ext_dir/themes/sizon-color-theme.json"
+
+  settings="$HOME/.config/Code - OSS/User/settings.json"
+  if [[ -f "$settings" ]]; then
+    tmp=$(mktemp)
+    clean=$(mktemp)
+    sed -e 's|^[[:space:]]*//.*$||' -e 's|^[[:space:]]*/\*.*\*/[[:space:]]*$||' "$settings" > "$clean"
+    jq --slurpfile colors "$theme_src" \
+      '."[Sizon Dark]" = { "workbench.colorCustomizations": $colors[0].colors, "editor.tokenColorCustomizations": { "textMateRules": $colors[0].tokenColors } }' \
+      "$clean" > "$tmp" && mv "$tmp" "$settings"
+    rm -f "$clean"
+  fi
+}
+
+inject_colors
+
+while true; do
+  theme_dir="$CURRENT_LINK/vscode/themes"
+  mkdir -p "$theme_dir" 2>/dev/null
+  file="$theme_dir/sizon-color-theme.json"
+
+  if [[ ! -f "$file" ]]; then
+    inotifywait -q -e create "$theme_dir" 2>/dev/null
+    continue
+  fi
+
+  inotifywait -q -e close_write "$file" 2>/dev/null
+  inject_colors
+done

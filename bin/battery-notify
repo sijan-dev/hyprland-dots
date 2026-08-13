@@ -1,0 +1,102 @@
+#!/bin/bash
+
+# Prevent multiple instances
+exec 200>${XDG_RUNTIME_DIR:-/tmp}/battery-notify.lock
+flock -n 200 || exit 0
+
+# Thresholds
+LOW=20
+CRITICAL=10
+DANGER=5
+
+# State tracking
+notified_low=false
+notified_critical=false
+notified_full=false
+last_status=""
+
+# Find battery
+for bat in /sys/class/power_supply/BAT*; do
+  [[ -e "$bat" ]] && BATTERY="$bat" && break
+done
+[[ -z "$BATTERY" ]] && exit 0
+
+get_percent() { cat "$BATTERY/capacity" 2>/dev/null || echo 0; }
+get_status() { cat "$BATTERY/status" 2>/dev/null || echo "Unknown"; }
+
+notify() {
+  notify-send -u "$1" -i "$2" -a "Power" \
+    -h string:x-canonical-private-synchronous:battery "$3" "$4"
+}
+
+play_sound() {
+  for sound in /usr/share/sounds/freedesktop/stereo/{dialog-warning,bell}.oga; do
+    [[ -f "$sound" ]] && { pw-play "$sound" 2>/dev/null || paplay "$sound" 2>/dev/null & return; }
+  done
+}
+
+set_profile() {
+  command -v powerprofilesctl &>/dev/null && powerprofilesctl set "$1" 2>/dev/null
+}
+
+suspend_with_countdown() {
+  local percent=$1 countdown=10
+
+  while ((countdown > 0)); do
+    [[ "$(get_status)" != "Discharging" ]] && { notify normal battery-good-charging "Suspend Cancelled" "Charger connected"; return; }
+    notify critical battery-empty "Suspending in ${countdown}s" "Battery at ${percent}%. Plug in to cancel."
+    sleep 5
+    ((countdown -= 5))
+  done
+
+  [[ "$(get_status)" == "Discharging" ]] && { notify critical battery-empty "Suspending Now" "Battery critically low"; sleep 1; systemctl suspend; }
+}
+
+check_battery() {
+  local percent=$(get_percent)
+  local status=$(get_status)
+
+  # Handle plug/unplug transitions
+  if [[ -n "$last_status" && "$status" != "$last_status" ]]; then
+    if [[ "$last_status" == "Discharging" && "$status" != "Discharging" ]]; then
+      set_profile performance
+      notified_low=false notified_critical=false notified_full=false
+    elif [[ "$status" == "Discharging" ]]; then
+      set_profile balanced
+    fi
+  fi
+  last_status=$status
+
+  # Battery level warnings (only when discharging)
+  if [[ "$status" == "Discharging" ]]; then
+    if ((percent <= DANGER)); then
+      play_sound
+      suspend_with_countdown "$percent"
+    elif ((percent <= CRITICAL)) && ! $notified_critical; then
+      play_sound
+      notify critical battery-empty "Battery Critical" "Battery at ${percent}%. Plug in now!"
+      notified_critical=true notified_low=true
+    elif ((percent <= LOW)) && ! $notified_low; then
+      notified_low=true
+    fi
+  elif [[ "$status" == "Full" || ($status != "Discharging" && $percent -ge 100) ]] && ! $notified_full; then
+    notified_full=true
+  elif [[ "$status" == "Charging" ]]; then
+    ((percent > LOW)) && notified_low=false
+    ((percent > CRITICAL)) && notified_critical=false
+    notified_full=false
+  fi
+}
+
+# Set initial power profile based on current state
+last_status=$(get_status)
+[[ "$last_status" == "Discharging" ]] && set_profile balanced || set_profile performance
+
+# Use upower events if available, otherwise poll
+if command -v upower &>/dev/null; then
+  while read -r _; do
+    check_battery
+  done < <(upower --monitor-detail 200>&- 2>/dev/null)
+else
+  while true; do check_battery; sleep 60; done
+fi
