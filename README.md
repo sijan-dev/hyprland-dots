@@ -10,7 +10,6 @@
 | --- | --- |
 | ![Desktop](assets/setup.png) | ![App launcher](assets/launcher.png) |
 | ![Wallpaper flipper](assets/wallflipper.png) | ![Themed apps](assets/chromium.png) |
-| ![Desktop](assets/screenshot-desktop.png) | |
 
 ## Overview
 
